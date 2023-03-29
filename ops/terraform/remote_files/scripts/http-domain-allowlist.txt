@@ -120,3 +120,6 @@ scheduler.einsteinathome.org
 einstein.phys.uwm.edu
 einstein-dl.syr.edu
 .aei.uni-hannover.de
+
+# github
+github.com
