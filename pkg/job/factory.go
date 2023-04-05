@@ -27,6 +27,7 @@ func ConstructDockerJob( //nolint:funlen
 	outputVolumes []string,
 	env []string,
 	entrypoint []string,
+	cmd []string,
 	image string,
 	concurrency int,
 	confidence int,

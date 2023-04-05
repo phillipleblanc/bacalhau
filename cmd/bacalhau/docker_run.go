@@ -74,6 +74,7 @@ type DockerRunOptions struct {
 
 	Image      string   // Image to execute
 	Entrypoint []string // Entrypoint to the docker image
+	Cmd        []string //Command arguments for Entrypoint
 
 	SkipSyntaxChecking bool // Verify the syntax using shellcheck
 
@@ -262,6 +263,11 @@ Git-LFS repo (e.g. '-i gitlfs://huggingface.co/bigscience/test-bloomd.git' URI m
 		`Mark the job as a candidate for moderation for FIL+ rewards.`,
 	)
 
+	dockerRunCmd.PersistentFlags().StringSliceVar(
+		&ODR.Entrypoint, "entrypoint", ODR.Entrypoint,
+		`Override the default ENTRYPOINT of the image`,
+	)
+
 	dockerRunCmd.PersistentFlags().AddFlagSet(NewRunTimeSettingsFlags(&ODR.RunTimeSettings))
 	dockerRunCmd.PersistentFlags().AddFlagSet(NewIPFSDownloadFlags(&ODR.DownloadFlags))
 
@@ -321,7 +327,7 @@ func dockerRun(cmd *cobra.Command, cmdArgs []string, ODR *DockerRunOptions) erro
 // CreateJob creates a job object from the given command line arguments and options.
 func CreateJob(ctx context.Context, cmdArgs []string, odr *DockerRunOptions) (*model.Job, error) { //nolint:funlen,gocyclo
 	odr.Image = cmdArgs[0]
-	odr.Entrypoint = cmdArgs[1:]
+	odr.Cmd = cmdArgs[1:]
 
 	swarmAddresses := odr.DownloadFlags.IPFSSwarmAddrs
 
@@ -439,6 +445,7 @@ func CreateJob(ctx context.Context, cmdArgs []string, odr *DockerRunOptions) (*m
 		odr.OutputVolumes,
 		odr.Env,
 		odr.Entrypoint,
+		odr.Cmd,
 		odr.Image,
 		odr.Concurrency,
 		odr.Confidence,

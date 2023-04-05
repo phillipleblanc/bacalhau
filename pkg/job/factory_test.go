@@ -85,6 +85,7 @@ func (suite *JobFactorySuite) TestRun_DockerJobOutputs() {
 					outputVolumes,
 					[]string{}, // env
 					[]string{}, // entrypoint
+					[]string{}, // cmd
 					"",         // image
 					1,          // concurrency
 					0,          // confidence
