@@ -73,7 +73,7 @@ type DockerRunOptions struct {
 	NodeSelector     string   // Selector (label query) to filter nodes on which this job can be executed
 
 	Image      string   // Image to execute
-	Entrypoint []string // Entrypoint to the docker image
+	Entrypoint string   // Entrypoint to the docker image
 	Cmd        []string //Command arguments for Entrypoint
 
 	SkipSyntaxChecking bool // Verify the syntax using shellcheck
@@ -263,7 +263,7 @@ Git-LFS repo (e.g. '-i gitlfs://huggingface.co/bigscience/test-bloomd.git' URI m
 		`Mark the job as a candidate for moderation for FIL+ rewards.`,
 	)
 
-	dockerRunCmd.PersistentFlags().StringSliceVar(
+	dockerRunCmd.PersistentFlags().StringVar(
 		&ODR.Entrypoint, "entrypoint", ODR.Entrypoint,
 		`Override the default ENTRYPOINT of the image`,
 	)

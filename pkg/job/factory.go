@@ -26,7 +26,7 @@ func ConstructDockerJob( //nolint:funlen
 	inputVolumes []string,
 	outputVolumes []string,
 	env []string,
-	entrypoint []string,
+	entrypoint string,
 	cmd []string,
 	image string,
 	concurrency int,
@@ -100,14 +100,20 @@ func ConstructDockerJob( //nolint:funlen
 		return &model.Job{}, err
 	}
 	j.APIVersion = a.String()
-
+	//If entrypoint is specified, construct a 1 element slice for it. Otherwise don't pass anything for that field
+	var entrypointSlice []string
+	if entrypoint == "" {
+		entrypointSlice = []string{}
+	} else {
+		entrypointSlice = []string{entrypoint}
+	}
 	j.Spec = model.Spec{
 		Engine:    e,
 		Verifier:  v,
 		Publisher: p,
 		Docker: model.JobSpecDocker{
 			Image:                image,
-			Entrypoint:           entrypoint,
+			Entrypoint:           entrypointSlice,
 			EnvironmentVariables: env,
 		},
 		Network: model.NetworkConfig{
