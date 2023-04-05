@@ -116,6 +116,7 @@ func ConstructDockerJob( //nolint:funlen
 			Image:                image,
 			Entrypoint:           entrypointSlice,
 			EnvironmentVariables: env,
+			Parameters:           cmd,
 		},
 		Network: model.NetworkConfig{
 			Type:    network,
