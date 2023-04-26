@@ -1,4 +1,4 @@
-//go:build integration
+//go:build integration || !unit
 
 package executor
 
@@ -15,6 +15,7 @@ func TestScenarios(t *testing.T) {
 		t.Run(
 			name,
 			func(t *testing.T) {
+				t.Log(name)
 				docker.MaybeNeedDocker(t, testCase.Spec.Engine == model.EngineDocker)
 				RunTestCase(t, testCase)
 			},
