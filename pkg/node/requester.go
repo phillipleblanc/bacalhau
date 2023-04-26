@@ -36,6 +36,7 @@ type Requester struct {
 	// Visible for testing
 	Endpoint           requester.Endpoint
 	JobStore           jobstore.Store
+	NodeDiscoverer     requester.NodeDiscoverer
 	computeProxy       *bprotocol.ComputeProxy
 	localCallback      compute.Callback
 	requesterAPIServer *requester_publicapi.RequesterAPIServer
@@ -100,6 +101,9 @@ func NewRequesterNode(
 	nodeRankerChain.Add(
 		// rankers that act as filters and give a -1 score to nodes that do not match the filter
 		ranking.NewEnginesNodeRanker(),
+		ranking.NewVerifiersNodeRanker(),
+		ranking.NewPublishersNodeRanker(),
+		ranking.NewStoragesNodeRanker(),
 		ranking.NewLabelsNodeRanker(),
 		ranking.NewMaxUsageNodeRanker(),
 		ranking.NewMinVersionNodeRanker(ranking.MinVersionNodeRankerParams{MinVersion: config.MinBacalhauVersion}),
@@ -187,7 +191,9 @@ func NewRequesterNode(
 	}
 
 	// register debug info providers for the /debug endpoint
-	debugInfoProviders := []model.DebugInfoProvider{}
+	debugInfoProviders := []model.DebugInfoProvider{
+		discovery.NewDebugInfoProvider(nodeDiscoveryChain),
+	}
 
 	// register requester public http apis
 	requesterAPIServer := requester_publicapi.NewRequesterAPIServer(requester_publicapi.RequesterAPIServerParams{
@@ -262,6 +268,7 @@ func NewRequesterNode(
 	return &Requester{
 		Endpoint:           endpoint,
 		localCallback:      scheduler,
+		NodeDiscoverer:     nodeDiscoveryChain,
 		JobStore:           jobStore,
 		computeProxy:       standardComputeProxy,
 		cleanupFunc:        cleanupFunc,

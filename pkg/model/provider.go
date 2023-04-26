@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bacalhau-project/bacalhau/pkg/util/generic"
+	"golang.org/x/exp/slices"
 )
 
 // A ProviderKey will usually be some lookup value implemented as an enum member
@@ -23,6 +24,22 @@ type Providable interface {
 type Provider[Key ProviderKey, Value Providable] interface {
 	Get(context.Context, Key) (Value, error)
 	Has(context.Context, Key) bool
+}
+
+// InstalledTypes returns all of the keys which the passed provider has
+// installed.
+func InstalledTypes[Key ProviderKey, Value Providable](
+	ctx context.Context,
+	provider Provider[Key, Value],
+	allKeys []Key,
+) []Key {
+	var installedTypes []Key
+	for _, key := range allKeys {
+		if provider.Has(ctx, key) {
+			installedTypes = append(installedTypes, key)
+		}
+	}
+	return installedTypes
 }
 
 // A MappedProvider is a Provider that stores the providables in a simple map,
@@ -98,4 +115,56 @@ func (p *NoopProvider[Key, Value]) Has(ctx context.Context, _ Key) bool {
 
 func NewNoopProvider[Key ProviderKey, Value Providable](noopProvidable Value) Provider[Key, Value] {
 	return &NoopProvider[Key, Value]{noopProvidable: noopProvidable}
+}
+
+// ConfiguredProvider prevents access to certain values based on a passed in
+// block-list of types. It appears as if the disabled types are not installed.
+type ConfiguredProvider[Key ProviderKey, Value Providable] struct {
+	inner    Provider[Key, Value]
+	disabled []Key
+}
+
+func NewConfiguredProvider[Key ProviderKey, Value Providable](inner Provider[Key, Value], disabled []Key) Provider[Key, Value] {
+	return &ConfiguredProvider[Key, Value]{inner: inner, disabled: disabled}
+}
+
+func (c *ConfiguredProvider[Key, Value]) Get(ctx context.Context, key Key) (v Value, err error) {
+	if !slices.Contains(c.disabled, key) {
+		return c.inner.Get(ctx, key)
+	} else {
+		return v, fmt.Errorf("%T is disabled: %s", key, key)
+	}
+}
+
+func (c *ConfiguredProvider[Key, Value]) Has(ctx context.Context, key Key) bool {
+	if !slices.Contains(c.disabled, key) {
+		return c.inner.Has(ctx, key)
+	} else {
+		return false
+	}
+}
+
+// ChainedProvider tries multiple different providers when trying to retrieve
+// a certain value.
+type ChainedProvider[Key ProviderKey, Value Providable] struct {
+	Providers []Provider[Key, Value]
+}
+
+func (c *ChainedProvider[Key, Value]) Get(ctx context.Context, key Key) (v Value, err error) {
+	for idx := range c.Providers {
+		v, err = c.Providers[idx].Get(ctx, key)
+		if err == nil {
+			return
+		}
+	}
+	return v, fmt.Errorf("%T is not installed: %s", key, key)
+}
+
+func (c *ChainedProvider[Key, Value]) Has(ctx context.Context, key Key) bool {
+	for idx := range c.Providers {
+		if c.Providers[idx].Has(ctx, key) {
+			return true
+		}
+	}
+	return false
 }

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/bacalhau-project/bacalhau/pkg/compute/publicapi"
+	computenodeapi "github.com/bacalhau-project/bacalhau/pkg/compute/publicapi"
 	"github.com/bacalhau-project/bacalhau/pkg/config"
 	"github.com/bacalhau-project/bacalhau/pkg/devstack"
 	"github.com/bacalhau-project/bacalhau/pkg/logger"
@@ -126,6 +126,7 @@ func newDevStackCmd() *cobra.Command {
 	)
 
 	devstackCmd.Flags().AddFlagSet(JobSelectionCLIFlags(&OS.JobSelectionPolicy))
+	devstackCmd.Flags().AddFlagSet(DisabledFeatureCLIFlags(&ODs.DisabledFeatures))
 	setupCapacityManagerCLIFlags(devstackCmd, OS)
 
 	return devstackCmd
@@ -219,7 +220,11 @@ func runDevstack(cmd *cobra.Command, ODs *devstack.DevStackOptions, OS *ServeOpt
 	}
 
 	if loggingMode == logger.LogModeStation {
-		fmt.Printf("API: %s\n", firstNode.APIServer.GetURI().JoinPath(publicapi.APIPrefix, publicapi.APIDebugSuffix))
+		for _, node := range stack.Nodes {
+			if node.IsComputeNode() {
+				cmd.Printf("API: %s\n", node.APIServer.GetURI().JoinPath(computenodeapi.APIPrefix, computenodeapi.APIDebugSuffix))
+			}
+		}
 	}
 
 	<-ctx.Done() // block until killed

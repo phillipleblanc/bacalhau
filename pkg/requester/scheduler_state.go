@@ -9,6 +9,7 @@ import (
 	"github.com/bacalhau-project/bacalhau/pkg/system"
 	"github.com/rs/zerolog/log"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/multierr"
 )
 
 // transitionJobState checks the current state of the job and transitions it to the next state if possible, along with triggering
@@ -86,7 +87,10 @@ func (s *BaseScheduler) checkForFailedExecutions(ctx context.Context, job model.
 		defer func() {
 			if !retried {
 				if lastFailedExecution.NodeID != "" {
-					finalErr = fmt.Errorf("node %s failed due to: %s", lastFailedExecution.NodeID, lastFailedExecution.Status)
+					finalErr = multierr.Append(
+						finalErr,
+						fmt.Errorf("node %s failed due to: %s", lastFailedExecution.NodeID, lastFailedExecution.Status),
+					)
 				}
 
 				errMsg := ""
@@ -183,7 +187,7 @@ func (s *BaseScheduler) checkForCompletedExecutions(ctx context.Context, job mod
 			log.Ctx(ctx).Error().Err(err).Msgf("[checkForCompletedExecutions] failed to update job state")
 			return
 		} else {
-			msg := fmt.Sprintf("job %s completed successuflly", job.ID())
+			msg := fmt.Sprintf("job %s completed successfully", job.ID())
 			if newState == model.JobStateCompletedPartially {
 				msg += " partially with some failed executions"
 			}
